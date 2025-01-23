@@ -1,0 +1,1504 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+html, body, #map {
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    margin: 0;
+}
+
+.legend {
+    background-color: white;
+    padding: 10px;
+    border: 2px solid #ccc;
+    border-radius: 5px;
+    font-family: Arial, sans-serif;
+    line-height: 1.5em;
+    position: absolute;
+    bottom: 30px;
+    right: 10px;
+    z-index: 1000;
+}
+
+.legend .title {
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 5px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.legend-item div {
+    width: 10px;
+    height: 10px;
+    margin-right: 8px;
+    border: 1px solid black;
+}
+</style>
+
+<title>Geoportal: Uczelnie Wyższe</title>
+<link rel="icon" type="image/ico" href="kino.ico"/>
+<meta charset="UTF-8">
+
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="leaflet/leaflet.css">
+
+<!-- Leaflet Search CSS -->
+<link rel="stylesheet" href="leaflet-search-master/src/leaflet-search.css">
+
+<!-- JQuery & JQuery UI CSS -->
+<link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+
+</head>
+<body>
+<div id="map"></div>
+
+<!-- Legenda -->
+<div class="legend">
+    <div class="title">Legenda</div>
+    <div class="legend-item"><div style="background-color: red;"></div>Uczelnie techniczne</div>
+    <div class="legend-item"><div style="background-color: blue;"></div>Uczelnie ekonomiczne</div>
+    <div class="legend-item"><div style="background-color: green;"></div>Uniwersytety</div>
+    <div class="legend-item"><div style="background-color: white; border: 1px solid black;"></div>Uczelnie medyczne</div>
+    <div class="legend-item"><div style="background-color: yellow;"></div>Akademie Wychowania Fizycznego</div>
+	<div class="legend-item"><div style="background-color: grey;"></div>Uczelnie techniczne</div>
+</div>
+
+<!-- Leaflet JS -->
+<script src="leaflet/leaflet.js"></script>
+
+<!-- Leaflet Search JS -->
+<script src="leaflet-search-master/src/leaflet-search.js"></script>
+
+<!-- JQuery & JQuery UI JS -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+
+<!-- SliderControl.js -->
+<script src="LeafletSlider-master/SliderControl.js"></script>
+
+<script>
+// Inicjalizacja mapy
+var myMap = L.map("map", {maxZoom: 20}).setView([52.02, 20.19], 6);
+
+// Dodanie warstwy OSM
+var osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png?{foo}', {
+    foo: 'bar',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+});
+osm.addTo(myMap);
+
+// Dodanie warstwy satelitarnej (ESRI World Imagery)
+var satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+});
+
+// Dodanie warstwy hillshade
+var hillshade = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'Tiles &copy; Esri &mdash; Source: Esri',
+    maxZoom: 16
+});
+
+// Dodanie warstwy CycleOSM (Thunderforest)
+var cycleosm = L.tileLayer('http://{s}.tile.thunderforest.com/cycle/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="http://openstreetmap.org">OpenStreetMap</a> Contributors & <a href="http://thunderforest.com/">Thunderforest</a>',
+    maxZoom: 18
+});
+
+
+
+
+
+
+// Dane GeoJSON dla uczelni wyższych
+var universities = {
+    "type": "FeatureCollection",
+    "features": [
+         
+    {
+        "type": "Feature",
+        "properties": { 
+            "nazwa": "Uniwersytet Jagielloński w Krakowie", 
+            "typ": "uniwersytety", 
+            "time": "1364-05-12" 
+        },
+        "geometry": { "type": "Point", "coordinates": [19.9386, 50.0614] }
+    },
+    {
+        "type": "Feature",
+        "properties": { 
+            "nazwa": "Katolicki Uniwersytet Lubelski Jana Pawła II", 
+            "typ": "uniwersytety", 
+            "time": "1918-07-27" 
+        },
+        "geometry": { "type": "Point", "coordinates": [22.54489770682251, 51.24756765572559] }
+    },
+    {
+        "type": "Feature",
+        "properties": { 
+            "nazwa": "Uniwersytet im. Adama Mickiewicza w Poznaniu", 
+            "typ": "uniwersytety", 
+            "time": "1919-05-07" 
+        },
+        "geometry": { "type": "Point", "coordinates": [16.9213, 52.4070] }
+    },
+    {
+        "type": "Feature",
+        "properties": { 
+            "nazwa": "Akademia Pedagogiki Specjalnej im. Marii Grzegorzewskiej", 
+            "typ": "uniwersytety", 
+            "time": "1922-06-12" 
+        },
+        "geometry": { "type": "Point", "coordinates": [20.991, 52.228] }
+    },
+    {
+        "type": "Feature",
+        "properties": { 
+            "nazwa": "Uniwersytet Ekonomiczny w Krakowie", 
+            "typ": "ekonomiczne", 
+            "time": "1925-05-28" 
+        },
+        "geometry": { "type": "Point", "coordinates": [19.9486, 50.0618] }
+    },
+    {
+        "type": "Feature",
+        "properties": { 
+            "nazwa": "SGH Warszawa", 
+            "typ": "ekonomiczne", 
+            "time": "1906-10-01" 
+        },
+        "geometry": { "type": "Point", "coordinates": [21.008611, 52.208889] }
+    },
+    {
+        "type": "Feature",
+        "properties": { 
+            "nazwa": "Politechnika Warszawska", 
+            "typ": "techniczne", 
+            "time": "1915-11-15" 
+        },
+        "geometry": { "type": "Point", "coordinates": [21.0106, 52.2206] }
+    },
+    {
+        "type": "Feature",
+        "properties": { 
+            "nazwa": "Politechnika Gdańska", 
+            "typ": "techniczne", 
+            "time": "1904-10-06" 
+        },
+        "geometry": { "type": "Point", "coordinates": [18.618889, 54.371389] }
+    },
+    {
+        "type": "Feature",
+        "properties": { 
+            "nazwa": "Uniwersytet Marii Curie-Skłodowskiej", 
+            "typ": "uniwersytety", 
+            "time": "1944-10-23" 
+        },
+        "geometry": { "type": "Point", "coordinates": [22.5697, 51.2458] }
+    },
+    {
+        "type": "Feature",
+        "properties": { 
+            "nazwa": "Uniwersytet Łódzki", 
+            "typ": "uniwersytety", 
+            "time": "1945-05-24" 
+        },
+        "geometry": { "type": "Point", "coordinates": [19.4572, 51.7592] }
+    },
+    {
+        "type": "Feature",
+        "properties": { 
+            "nazwa": "Politechnika Krakowska im. Tadeusza Kościuszki", 
+            "typ": "techniczne", 
+            "time": "1945-04-01" 
+        },
+        "geometry": { "type": "Point", "coordinates": [19.944111, 50.071694] } 
+    },
+    {
+        "type": "Feature",
+        "properties": { 
+            "nazwa": "Politechnika Łódzka", 
+            "typ": "techniczne", 
+            "time": "1945-05-24" 
+        },
+        "geometry": { "type": "Point", "coordinates": [19.456, 51.7519] }
+    },
+	{
+        "type": "Feature",
+        "properties": { 
+            "nazwa": "Politechnika Białostocka", 
+            "typ": "techniczne", 
+            "time": "1949-12-01" 
+        },
+        "geometry": { "type": "Point", "coordinates": [23.1725, 53.1345] }
+    },
+    {
+        "type": "Feature",
+        "properties": { 
+            "nazwa": "Politechnika Częstochowska", 
+            "typ": "techniczne", 
+            "time": "1949-12-01" 
+        },
+        "geometry": { "type": "Point", "coordinates": [19.1227, 50.8112] }
+    },
+    {
+        "type": "Feature",
+        "properties": { 
+            "nazwa": "Warszawski Uniwersytet Medyczny", 
+            "typ": "medyczne", 
+            "time": "1950-01-01" 
+        },
+        "geometry": { "type": "Point", "coordinates": [20.9853, 52.2058] }
+    },
+    {
+        "type": "Feature",
+        "properties": { 
+            "nazwa": "Akademia Wychowania Fizycznego im. Polskich Olimpijczyków we Wrocławiu", 
+            "typ": "awf", 
+            "time": "1950-06-10" 
+        },
+        "geometry": { "type": "Point", "coordinates": [17.040, 51.110] }
+    },
+    {
+        "type": "Feature",
+        "properties": { 
+            "nazwa": "Akademia Wychowania Fizycznego im. Bronisława Czecha w Krakowie", 
+            "typ": "awf", 
+            "time": "1950-07-05" 
+        },
+        "geometry": { "type": "Point", "coordinates": [19.931, 50.070] }
+    },
+    {
+        "type": "Feature",
+        "properties": { 
+            "nazwa": "Akademia Wychowania Fizycznego im. Eugeniusza Piaseckiego w Poznaniu", 
+            "typ": "awf", 
+            "time": "1950-07-05" 
+        },
+        "geometry": { "type": "Point", "coordinates": [16.914, 52.402] }
+    },
+    {
+        "type": "Feature",
+        "properties": { 
+            "nazwa": "Politechnika Bydgoska im. Jana i Jędrzeja Śniadeckich", 
+            "typ": "techniczne", 
+            "time": "1951-09-01" 
+        },
+        "geometry": { "type": "Point", "coordinates": [18.0009, 53.1221] }
+    },
+    {
+        "type": "Feature",
+        "properties": { 
+            "nazwa": "Politechnika Lubelska", 
+            "typ": "techniczne", 
+            "time": "1953-05-13" 
+        },
+        "geometry": { "type": "Point", "coordinates": [22.54881406764, 51.2351792575118] }
+    },
+    {
+        "type": "Feature",
+        "properties": { 
+            "nazwa": "Akademia Wychowania Fizycznego im. Jerzego Kukuczki w Katowicach", 
+            "typ": "awf", 
+            "time": "1970-09-01" 
+        },
+        "geometry": { "type": "Point", "coordinates": [19.021, 50.262] }
+    },
+    {
+        "type": "Feature",
+        "properties": { 
+            "nazwa": "Uniwersytet Jana Kochanowskiego w Kielcach", 
+            "typ": "uniwersytety", 
+            "time": "1969-07-01" 
+        },
+        "geometry": { "type": "Point", "coordinates": [20.6286, 50.8661] }
+    },
+    {
+        "type": "Feature",
+        "properties": { 
+            "nazwa": "Akademia Wychowania Fizycznego i Sportu im. Jędrzeja Śniadeckiego w Gdańsku", 
+            "typ": "awf", 
+            "time": "1969-08-06" 
+        },
+        "geometry": { "type": "Point", "coordinates": [18.5614, 54.419628] }
+    },
+    {
+        "type": "Feature",
+        "properties": { 
+            "nazwa": "Uniwersytet Kazimierza Wielkiego", 
+            "typ": "uniwersytety", 
+            "time": "1969-09-01" 
+        },
+        "geometry": { "type": "Point", "coordinates": [18.0119, 53.1226] }
+    },
+    {
+        "type": "Feature",
+        "properties": { 
+            "nazwa": "Uniwersytet Jana Długosza w Częstochowie", 
+            "typ": "uniwersytety", 
+            "time": "1971-06-01" 
+        },
+        "geometry": { "type": "Point", "coordinates": [19.1244, 50.8067] }
+    },
+    {
+        "type": "Feature",
+        "properties": { 
+            "nazwa": "Politechnika Koszalińska", 
+            "typ": "techniczne", 
+            "time": "1968-06-08" 
+        },
+        "geometry": { "type": "Point", "coordinates": [16.1812, 54.1863] }
+    },
+    {
+        "type": "Feature",
+        "properties": { 
+            "nazwa": "Uniwersytet Opolski", 
+            "typ": "uniwersytety", 
+            "time": "1994-03-10" 
+        },
+        "geometry": { "type": "Point", "coordinates": [17.9253, 50.6721] }
+    },
+    
+    {
+        "type": "Feature",
+        "properties": { 
+            "nazwa": "Uniwersytet Kardynała Stefana Wyszyńskiego w Warszawie", 
+            "typ": "uniwersytety", 
+            "time": "1999-09-01" 
+        },
+        "geometry": { "type": "Point", "coordinates": [20.9596, 52.2964] }
+    },
+   
+    {
+        "type": "Feature",
+        "properties": { 
+            "nazwa": "Uniwersytet Kaliski im. Prezydenta Stanisława Wojciechowskiego", 
+            "typ": "uniwersytety", 
+            "time": "2019-01-01" 
+        },
+        "geometry": { "type": "Point", "coordinates": [18.0858, 51.7614] }
+    },
+    {
+        "type": "Feature",
+        "properties": { 
+            "nazwa": "Uniwersytet Komisji Edukacji Narodowej w Krakowie", 
+            "typ": "uniwersytety", 
+            "time": "2020-10-14" 
+        },
+        "geometry": { "type": "Point", "coordinates": [19.9450, 50.0647] }
+    },
+    {
+        "type": "Feature",
+        "properties": { 
+            "nazwa": "Akademia Piotrkowska", 
+            "typ": "uniwersytety", 
+            "time": "2023-06-01" 
+        },
+        "geometry": { "type": "Point", "coordinates": [19.689, 51.406] }
+    },
+	 {
+        "type": "Feature",
+        "properties": { 
+            "nazwa": "Akademia Wychowania Fizycznego Józefa Piłsudskiego w Warszawie", 
+            "typ": "awf", 
+            "time": "1929-09-12" 
+        },
+        "geometry": { "type": "Point", "coordinates": [20.95552, 52.28536] }
+    },
+		{
+		"type": "Feature",
+		"properties": {
+        "nazwa": "Szkoła Główna Gospodarstwa Wiejskiego w Warszawie",
+        "typ": "techniczne",
+        "time": "1816-09-23" 
+		},
+		"geometry": {  "type": "Point",  "coordinates": [21.04802, 52.1638] }
+	},
+		{
+		"type": "Feature",
+		"properties": {
+        "nazwa": "Uniwersytet Gdański",
+        "typ": "uniwersytety",
+        "time": "1970-03-20" 
+		},
+		"geometry": {  "type": "Point",  "coordinates": [18.568611, 54.399444] }
+	},
+	
+		{
+        "type": "Feature",
+        "properties": { 
+            "nazwa": "Politechnika Rzeszowska im. Ignacego Łukasiewicza", 
+            "typ": "techniczne", 
+            "time": "1963-06-18" 
+        },
+        "geometry": { "type": "Point", "coordinates": [21.985028, 50.027] }
+    },
+		{
+        "type": "Feature",
+        "properties": { 
+            "nazwa": "Uniwersytet Warmińsko-Mazurski w Olsztynie", 
+            "typ": "uniwersytety", 
+            "time": "1999-09-01" 
+        },
+        "geometry": { "type": "Point", "coordinates": [20.460833, 53.760278] }
+    },
+	{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Akademia Bialska im. Jana Pawła II",
+        "typ": "uniwersytety",
+        "time": "1990-01-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [23.157248497009277, 52.02419108336316]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Akademia Ekonomiczno-Humanistyczna w Warszawie",
+        "typ": "ekonomiczne",
+        "time": "2000-01-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [20.983457565307617, 52.24446203445784]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Akademia Górnośląska - Wydział Zamiejscowy w Żorach",
+        "typ": "uniwersytety",
+        "time": "2010-01-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [18.689193199999977, 50.0420324]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Akademia Górnośląska im. Wojciecha Korfantego w Katowicach",
+        "typ": "uniwersytety",
+        "time": "2015-01-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [18.976070880889892, 50.212462680973644]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Akademia Humanistyczno-Ekonomiczna w Łodzi - Filia w Jaśle",
+        "typ": "uniwersytety",
+        "time": "2005-01-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [21.461865399999965, 49.7468549]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Akademia Humanistyczno-Ekonomiczna w Łodzi - Filia w Świdnicy",
+        "typ": "uniwersytety",
+        "time": "2008-01-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [16.504833698272705, 50.845107140449585]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Akademia Humanistyczno-Ekonomiczna w Łodzi - Filia w Trzciance",
+        "typ": "uniwersytety",
+        "time": "2012-01-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [16.464346999999975, 53.0445258]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Akademia Humanistyczno-Ekonomiczna w Łodzi - Filia w Warszawie",
+        "typ": "uniwersytety",
+        "time": "2016-01-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [20.935318523289506, 52.299799058496575] 
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Akademia Humanistyczno-Ekonomiczna w Łodzi - Filia w Wodzisławiu Śląskim",
+        "typ": "uniwersytety",
+        "time": "2014-01-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [18.471912145614624, 50.00314310899606]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Akademia Humanitas",
+        "typ": "uniwersytety",
+        "time": "2001-01-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [19.12292718887329, 50.278822872760614]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Akademia im. Aleksandra Gieysztora - filia AFiB Vistula",
+        "typ": "uniwersytety",
+        "time": "2007-01-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [21.0740164, 52.7031014]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Akademia im. Jakuba z Paradyża",
+        "typ": "uniwersytety",
+        "time": "1998-07-21"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [15.25175, 52.73197]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Akademia Jagiellońska w Toruniu",
+        "typ": "uniwersytety",
+        "time": "2000-01-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [18.60972, 53.012051]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Akademia Kaliska im. Prezydenta Stanisława Wojciechowskiego",
+        "typ": "uniwersytety",
+        "time": "1999-06-15"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [18.0849552154541, 51.757109125562245]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Akademia Katolicka w Warszawie",
+        "typ": "uniwersytety",
+        "time": "2005-01-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [20.999967582664468, 52.20537413936533]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Akademia Kujawsko-Pomorska",
+        "typ": "uniwersytety",
+        "time": "2008-01-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [18.021323499999994, 53.118986]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Akademia Kultury Społecznej i Medialnej w Toruniu",
+        "typ": "uniwersytety",
+        "time": "2001-01-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [18.582440614700317, 53.023437947746835]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Akademia Łomżyńska",
+        "typ": "uniwersytety",
+        "time": "2010-01-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [22.049860954284668, 53.16021696647707]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Akademia Marynarki Wojennej im. Bohaterów Westerplatte",
+        "typ": "uniwersytety",
+        "time": "1922-01-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [18.54543685913086, 54.54392838445461]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Akademia Mazowiecka w Płocku",
+        "typ": "uniwersytety",
+        "time": "2006-01-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [19.696855, 52.5394484]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Akademia Medyczna Nauk Stosowanych i Holistycznych",
+        "typ": "medyczne",
+        "time": "2015-01-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [20.9457239, 52.2261711]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Akademia Medycznych i Społecznych Nauk Stosowanych w Elblągu",
+        "typ": "medyczne",
+        "time": "2018-01-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [19.422025680541992, 54.14760669165059]
+    }
+},
+
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Akademia Nauk Społecznych i Medycznych w Lublinie",
+        "typ": "medyczne",
+        "time": "2005-01-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [22.56843559999993, 51.2451248]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Akademia Nauk Stosowanych - Wyższa Szkoła Zarządzania i Administracji w Opolu",
+        "typ": "uniwersytety",
+        "time": "1996-01-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [17.921136617660522, 50.66297562331555]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Akademia Nauk Stosowanych Angelusa Silesiusa",
+        "typ": "uczelnie zawodowe",
+        "time": "2002-01-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [16.281137466430664, 50.76257636814244]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Akademia Nauk Stosowanych Gospodarki Krajowej w Kutnie",
+        "typ": "uniwersytety",
+        "time": "2010-01-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [19.362759590148926, 52.23673598420239]
+    }
+},
+
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Akademia Nauk Stosowanych im. Hipolita Cegielskiego w Gnieźnie",
+        "typ": "uczelnie zawodowe",
+        "time": "2005-01-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [17.607758045196533, 52.537852283665984]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Akademia Nauk Stosowanych im. Jana Amosa Komeńskiego w Lesznie",
+        "typ": "uczelnie zawodowe",
+        "time": "2000-01-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [16.58034324645996, 51.84920695764814]
+    }
+},
+
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Akademia Nauk Stosowanych im. prof. Edwarda Lipińskiego w Kielcach",
+        "typ": "uczelnie zawodowe",
+        "time": "1997-01-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [20.602498054504394, 50.86740310617859]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Akademia Nauk Stosowanych im. Stanisława Staszica w Pile",
+        "typ": "uczelnie zawodowe",
+        "time": "2001-01-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [16.762733459472656, 53.15577811223602]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Akademia Nauk Stosowanych Mazovia",
+        "typ": "uniwersytety",
+        "time": "2003-01-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [22.267065099999968, 52.1876656]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Akademia Nauk Stosowanych Mazovia - Filia w Otwocku",
+        "typ": "uniwersytety",
+        "time": "2010-01-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [21.2755439, 52.10176689999999]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Akademia Nauk Stosowanych Stefana Batorego",
+        "typ": "uczelnie zawodowe",
+        "time": "2000-01-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [20.14468789100647, 51.947842667993086]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Akademia Nauk Stosowanych TWP w Szczecinie",
+        "typ": "uniwersytety",
+        "time": "1998-01-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [14.5411, 53.436661]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Akademia Nauk Stosowanych TWP w Szczecinie - Filia w Koninie",
+        "typ": "uniwersytety",
+        "time": "2005-01-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [18.246066799999994, 52.20459779999999]
+    }
+},
+
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Akademia Nauk Stosowanych w Elblągu",
+        "typ": "uczelnie zawodowe",
+        "time": "1998-01-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [19.418206214904785, 54.155573871588814]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Akademia Nauk Stosowanych w Koninie",
+        "typ": "uczelnie zawodowe",
+        "time": "2000-01-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [18.271422386169433, 52.22757598168686]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Akademia Nauk Stosowanych w Nowym Sączu",
+        "typ": "uczelnie zawodowe",
+        "time": "1995-01-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [20.698156356811523, 49.61736954200478]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Akademia Nauk Stosowanych w Nowym Targu",
+        "typ": "uczelnie zawodowe",
+        "time": "2005-01-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [20.048439502716064, 49.49121107916172]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Uniwersytet Rzeszowski",
+        "typ": "uniwersytety",
+        "time": "2001-01-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [21.985028, 50.027]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Uniwersytet Szczeciński",
+        "typ": "uniwersytety",
+        "time": "1985-10-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [14.5411, 53.436661]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Uniwersytet Śląski w Katowicach",
+        "typ": "uniwersytety",
+        "time": "1968-06-08"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [19.02876, 50.25498]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Uniwersytet w Białymstoku",
+        "typ": "uniwersytety",
+        "time": "1997-06-19"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [23.1623441, 53.133899]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Uniwersytet Zielonogórski w Zielonej Górze",
+        "typ": "uniwersytety",
+        "time": "2001-01-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [15.505, 51.935]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Zachodniopomorski Uniwersytet Technologiczny w Szczecinie",
+        "typ": "techniczne",
+        "time": "2009-01-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [14.535, 53.430]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Uniwersytet Radomski im. Kazimierza Pułaskiego",
+        "typ": "uniwersytety",
+        "time": "1950-01-13"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [21.151944, 51.4075]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Państwowa Akademia Nauk Stosowanych im. Ignacego Mościckiego w Ciechanowie",
+        "typ": "uczelnie zawodowe",
+        "time": "2001-01-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [20.619582, 52.883565]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Państwowa Akademia Nauk Stosowanych im. ks. Bronisława Markiewicza w Jarosławiu",
+        "typ": "uczelnie zawodowe",
+        "time": "1998-10-18"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [22.676922, 50.016121]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Państwowa Akademia Nauk Stosowanych w Chełmie",
+        "typ": "uczelnie zawodowe",
+        "time": "2001-07-24"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [23.485748, 51.143126]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Państwowa Akademia Nauk Stosowanych w Głogowie",
+        "typ": "uczelnie zawodowe",
+        "time": "2004-06-22"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [16.086544, 51.66344]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Państwowa Akademia Nauk Stosowanych w Krośnie",
+        "typ": "uczelnie zawodowe",
+        "time": "1999-01-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [21.789322, 49.689065]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Państwowa Akademia Nauk Stosowanych w Nysie",
+        "typ": "uczelnie zawodowe",
+        "time": "2001-06-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [17.334519, 50.469219]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Państwowa Akademia Nauk Stosowanych w Przemyślu",
+        "typ": "uczelnie zawodowe",
+        "time": "2001-01-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [22.779942, 49.784174]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Państwowa Akademia Nauk Stosowanych we Włocławku",
+        "typ": "uczelnie zawodowe",
+        "time": "2002-02-02"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [19.065056, 52.66298]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Politechnika Opolska",
+        "typ": "techniczne",
+        "time": "1966-05-15"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [17.9267, 50.6722]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Politechnika Poznańska",
+        "typ": "techniczne",
+        "time": "1919-09-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [16.9178, 52.4031]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Politechnika Śląska",
+        "typ": "techniczne",
+        "time": "1945-06-24"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [18.6766, 50.2895]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Politechnika Świętokrzyska",
+        "typ": "techniczne",
+        "time": "1965-01-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [20.6382, 50.8661]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Politechnika Wrocławska",
+        "typ": "techniczne",
+        "time": "1945-08-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [17.0588, 51.1079]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Uniwersytet Warszawski",
+        "typ": "uniwersytety",
+        "time": "1816-11-19"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [21.0186, 52.2401]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Państwowa Uczelnia Zawodowa im. prof. Edwarda F. Szczepanika w Suwałkach",
+        "typ": "uczelnie zawodowe",
+        "time": "2005-10-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [22.932705328477272, 54.09662796887926]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Akademia Górniczo-Hutnicza im. Stanisława Staszica w Krakowie",
+        "typ": "techniczne",
+        "time": "1919-10-20"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [19.9191, 50.0669]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Uniwersytet Bielsko-Bialski",
+        "typ": "uniwersytety",
+        "time": "2001-06-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [19.0480, 49.8220]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Chrześcijańska Akademia Teologiczna w Warszawie",
+        "typ": "uniwersytety",
+        "time": "2012-09-30"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [21.0071, 52.2477]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Szkoła Główna Mikołaja Kopernika",
+        "typ": "uniwersytety",
+        "time": "2023-09-30"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [21.008230186186985, 52.227724711334325]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Uniwersytet Ekonomiczny w Katowicach",
+        "typ": "ekonomiczne",
+        "time": "1937-01-11"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [19.044167, 50.259167]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Uniwersytet Ekonomiczny w Poznaniu",
+        "typ": "ekonomiczne",
+        "time": "1926-01-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [16.918333, 52.406111]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Uniwersytet Ekonomiczny we Wrocławiu",
+        "typ": "ekonomiczne",
+        "time": "1947-03-06"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [17.025, 51.091389]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Uniwersytet Mikołaja Kopernika w Toruniu",
+        "typ": "uniwersytety",
+        "time": "1945-08-24"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [18.572222, 53.018333]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Uniwersytet Pomorski w Słupsku",
+        "typ": "uniwersytety",
+        "time": "1969-06-27"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [17.04247, 54.45254]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Uniwersytet Przyrodniczy w Lublinie",
+        "typ": "uniwersytety",
+        "time": "1955-08-06"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [22.540556, 51.243611]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Uniwersytet Przyrodniczy w Poznaniu",
+        "typ": "uniwersytety",
+        "time": "1951-01-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [16.90455, 52.42682]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Uniwersytet Przyrodniczy we Wrocławiu",
+        "typ": "uniwersytety",
+        "time": "1951-11-17"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [17.063889, 51.111111]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Uniwersytet Rolniczy im. Hugona Kołłątaja w Krakowie",
+        "typ": "uniwersytety",
+        "time": "1953-07-29"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [19.924722, 50.064722]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Uniwersytet w Siedlcach",
+        "typ": "uniwersytety",
+        "time": "1969-07-29"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [22.284244, 52.169603]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Uniwersytet Wrocławski",
+        "typ": "uniwersytety",
+        "time": "1702-10-21"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [17.033333, 51.113611]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Akademia Nauk Stosowanych w Raciborzu",
+        "typ": "uczelnie zawodowe",
+        "time": "2001-09-20"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [18.205278, 50.0875]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Akademia Nauk Stosowanych w Wałczu",
+        "typ": "uczelnie zawodowe",
+        "time": "2004-07-01"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [16.491306, 53.280722]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Akademia Tarnowska",
+        "typ": "uczelnie zawodowe",
+        "time": "1998-05-19"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [20.99043, 50.01564]
+    }
+},
+{
+    "type": "Feature",
+    "properties": {
+        "nazwa": "Akademia Zamojska",
+        "typ": "uczelnie zawodowe",
+        "time": "1595-03-15"
+    },
+    "geometry": {
+        "type": "Point",
+        "coordinates": [23.250556, 50.7175]
+    }
+},
+
+
+
+
+
+	
+    ]
+};
+// Sortowanie uczelni według daty założenia
+universities.features.sort((a, b) => new Date(a.properties.time) - new Date(b.properties.time));
+
+
+// Funkcja stylizująca punkty uczelni
+function getMarkerStyle(type) {
+    var styles = {
+        "techniczne": { color: "red", radius: 8 },
+        "ekonomiczne": { color: "blue", radius: 8 },
+        "uniwersytety": { color: "green", radius: 8 },
+        "medyczne": { color: "white", radius: 8, weight: 1, opacity: 0.8 },
+        "awf": { color: "yellow", radius: 8 }
+    };
+    return styles[type] || { color: "gray", radius: 8 }; // Domyślny styl
+}
+
+// Dodanie uczelni jako warstwy GeoJSON
+var universities_layer = L.geoJSON(universities, {
+    pointToLayer: function (feature, latlng) {
+        var style = getMarkerStyle(feature.properties.typ);
+        return L.circleMarker(latlng, {
+            radius: style.radius,
+            fillColor: style.color,
+            color: "black",
+            weight: 1,
+            fillOpacity: 1
+        });
+    },
+    onEachFeature: function (feature, layer) {
+        layer.bindPopup(
+            "<b>" + feature.properties.nazwa + "</b><br>" +
+            "Typ: " + feature.properties.typ.charAt(0).toUpperCase() + feature.properties.typ.slice(1) + "<br>" +
+            "Data założenia: " + feature.properties.time
+        );
+    }
+});
+
+// Dodanie uczelni do mapy
+universities_layer.addTo(myMap);
+
+// Dodanie funkcji wyszukiwania
+var searchControl = new L.Control.Search({
+    layer: universities_layer,
+    propertyName: "nazwa", // Szukanie po nazwie uczelni
+    marker: false,
+    moveToLocation: function (latlng, title, map) {
+        map.setView(latlng, 15); // Powiększenie mapy po znalezieniu
+    }
+});
+searchControl.addTo(myMap);
+
+// Dodanie slidera
+var sliderControl = L.control.sliderControl({
+    position: "topright",
+    layer: universities_layer,
+    timeAttribute: "time", // Klucz atrybutu czasowego
+    rezoom: 10
+});
+myMap.addControl(sliderControl);
+sliderControl.startSlider();
+
+// Dodanie skalowania i przełączania warstw
+L.control.scale().addTo(myMap);
+var baseLayers = {
+    "OpenStreetMap": osm,
+	"Satelitarna (ESRI)": satellite,
+	"Mapa terenu (NASA)": hillshade,
+	  "CycleOSM": cycleosm  
+};
+
+var overlays = {
+    "Uczelnie Wyższe": universities_layer,
+
+};
+
+L.control.layers(baseLayers, overlays).addTo(myMap);
+
+// Aktualizacja stopki
+myMap.attributionControl.setPrefix('<a href="http://leafletjs.com">Leaflet</a> | Mój pierwszy Geoportal');
+</script>
+</body>
+</html>
